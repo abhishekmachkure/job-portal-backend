@@ -81,13 +81,13 @@ const adminOnly = (req, res, next) => {
 };
 
 /* ================== HEALTH CHECK ================== */
-
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-/* ================== AUTH ================== */
+/* ================== AUTH ROUTES ================== */
 
+// REGISTER
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -112,6 +112,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+// LOGIN
 app.post("/api/auth/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -135,16 +136,55 @@ app.post("/api/auth/login", async (req, res) => {
 
 /* ================== JOB ROUTES ================== */
 
+// GET ALL JOBS
 app.get("/api/jobs", async (req, res) => {
   const jobs = await Job.find();
   res.json(jobs);
 });
 
+// GET SINGLE JOB
+app.get("/api/jobs/:id", async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.json(job);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// CREATE JOB
 app.post("/api/jobs", auth, adminOnly, async (req, res) => {
   const job = await Job.create(req.body);
   res.json(job);
 });
 
+// UPDATE JOB
+app.put("/api/jobs/:id", auth, adminOnly, async (req, res) => {
+  try {
+    const updated = await Job.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.json(updated);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE JOB
 app.delete("/api/jobs/:id", auth, adminOnly, async (req, res) => {
   await Job.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
@@ -152,7 +192,7 @@ app.delete("/api/jobs/:id", auth, adminOnly, async (req, res) => {
 
 /* ================== APPLICATION ================== */
 
-// ✅ APPLY
+// APPLY
 app.post("/api/apply", auth, async (req, res) => {
   const exists = await Application.findOne({
     user: req.user.id,
@@ -171,13 +211,27 @@ app.post("/api/apply", auth, async (req, res) => {
   res.json(appData);
 });
 
-// ✅ USER APPLICATIONS
+// USER APPLICATIONS
 app.get("/api/my-applications", auth, async (req, res) => {
   const apps = await Application.find({ user: req.user.id }).populate("job");
   res.json(apps);
 });
 
-// ✅ DELETE APPLICATION
+// ADMIN APPLICATIONS
+app.get("/api/applications", auth, adminOnly, async (req, res) => {
+  try {
+    const apps = await Application.find()
+      .populate("user", "name email skills education phone location linkedin resume")
+      .populate("job", "title company location salary skills");
+
+    res.json(apps);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE APPLICATION
 app.delete("/api/applications/:id", auth, async (req, res) => {
   const application = await Application.findById(req.params.id);
 
@@ -194,86 +248,29 @@ app.delete("/api/applications/:id", auth, async (req, res) => {
   res.json({ message: "Application withdrawn ✅" });
 });
 
+/* ================= PROFILE ================= */
+
+// GET PROFILE
+app.get("/api/user/profile", auth, async (req, res) => {
+  const user = await User.findById(req.user.id).select("-password");
+  res.json(user);
+});
+
+// UPDATE PROFILE
+app.put("/api/user/profile", auth, async (req, res) => {
+  const updated = await User.findByIdAndUpdate(
+    req.user.id,
+    req.body,
+    { new: true }
+  ).select("-password");
+
+  res.json(updated);
+});
+
 /* ================== SERVER ================== */
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-});
-// ✅ ADMIN APPLICATIONS (THIS FIXES YOUR DASHBOARD)
-app.get("/api/applications", auth, adminOnly, async (req, res) => {
-  try {
-    const apps = await Application.find()
-      .populate("user", "name email skills education phone location linkedin resume")
-      .populate("job", "title company location salary skills");
-
-    res.json(apps);
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ✅ GET PROFILE
-app.get("/api/user/profile", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ✅ UPDATE PROFILE
-app.put("/api/user/profile", auth, async (req, res) => {
-  try {
-    const updated = await User.findByIdAndUpdate(
-      req.user.id,
-      req.body,
-      { new: true }
-    ).select("-password");
-
-    res.json(updated);
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ✅ GET SINGLE JOB (REQUIRED FOR EDIT)
-app.get("/api/jobs/:id", async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-
-    res.json(job);
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ✅ UPDATE JOB (REQUIRED FOR EDIT)
-app.put("/api/jobs/:id", auth, adminOnly, async (req, res) => {
-  try {
-    const updated = await Job.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-
-    res.json(updated);
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 });
