@@ -13,7 +13,6 @@ app.use(express.json());
 app.use(cors({ origin: "*" }));
 
 /* ================== MONGODB ================== */
-// ✅ FIXED (REMOVE OLD OPTIONS)
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ DB Error:", err));
@@ -87,7 +86,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-/* ================== AUTH ROUTES ================== */
+/* ================== AUTH ================== */
 
 app.post("/api/auth/register", async (req, res) => {
   try {
@@ -137,55 +136,62 @@ app.post("/api/auth/login", async (req, res) => {
 /* ================== JOB ROUTES ================== */
 
 app.get("/api/jobs", async (req, res) => {
-  try {
-    const jobs = await Job.find();
-    res.json(jobs);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  const jobs = await Job.find();
+  res.json(jobs);
 });
 
 app.post("/api/jobs", auth, adminOnly, async (req, res) => {
-  try {
-    const job = await Job.create(req.body);
-    res.json(job);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  const job = await Job.create(req.body);
+  res.json(job);
 });
 
 app.delete("/api/jobs/:id", auth, adminOnly, async (req, res) => {
-  try {
-    await Job.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  await Job.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
 });
 
 /* ================== APPLICATION ================== */
 
-app.get("/api/applications", auth, adminOnly, async (req, res) => {
-  try {
-    const apps = await Application.find()
-      .populate("user", "name email")
-      .populate("job", "title company");
+// ✅ APPLY
+app.post("/api/apply", auth, async (req, res) => {
+  const exists = await Application.findOne({
+    user: req.user.id,
+    job: req.body.jobId
+  });
 
-    res.json(apps);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  if (exists) {
+    return res.status(400).json({ message: "Already applied" });
   }
+
+  const appData = await Application.create({
+    user: req.user.id,
+    job: req.body.jobId
+  });
+
+  res.json(appData);
 });
 
-/* ================= PROFILE ================= */
+// ✅ USER APPLICATIONS
+app.get("/api/my-applications", auth, async (req, res) => {
+  const apps = await Application.find({ user: req.user.id }).populate("job");
+  res.json(apps);
+});
 
-app.get("/api/user/profile", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+// ✅ DELETE APPLICATION
+app.delete("/api/applications/:id", auth, async (req, res) => {
+  const application = await Application.findById(req.params.id);
+
+  if (!application) {
+    return res.status(404).json({ message: "Application not found" });
   }
+
+  if (application.user.toString() !== req.user.id) {
+    return res.status(403).json({ message: "Not allowed ❌" });
+  }
+
+  await Application.findByIdAndDelete(req.params.id);
+
+  res.json({ message: "Application withdrawn ✅" });
 });
 
 /* ================== SERVER ================== */
