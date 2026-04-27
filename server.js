@@ -221,8 +221,14 @@ app.get("/api/my-applications", auth, async (req, res) => {
 app.get("/api/applications", auth, adminOnly, async (req, res) => {
   try {
     const apps = await Application.find()
-      .populate("user", "name email skills education phone location linkedin resume")
-      .populate("job", "title company location salary skills");
+      .populate(
+        "user",
+        "name email skills education phone location linkedin resume"
+      )
+      .populate(
+        "job",
+        "title company location salary skills"
+      );
 
     res.json(apps);
 
@@ -274,3 +280,13 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+const ApplicationSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
+  status: {
+    type: String,
+    enum: ["applied", "accepted", "rejected"],
+    default: "applied"
+  }
+}, { timestamps: true }); // ✅ ADD THIS LINE
