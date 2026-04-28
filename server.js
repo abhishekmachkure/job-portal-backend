@@ -19,6 +19,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 /* ================== MODELS ================== */
 
+/* ================== MODELS ================== */
+
 const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
@@ -44,6 +46,7 @@ const JobSchema = new mongoose.Schema({
   skills: String
 });
 
+/* ✅ MOVE THIS UP */
 const ApplicationSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
@@ -52,13 +55,12 @@ const ApplicationSchema = new mongoose.Schema({
     enum: ["applied", "accepted", "rejected"],
     default: "applied"
   }
-}, { timestamps: true }); // ✅ ADD THIS LINE
+}, { timestamps: true });
 
-
+/* ✅ THEN CREATE MODELS */
 const User = mongoose.model("User", UserSchema);
 const Job = mongoose.model("Job", JobSchema);
 const Application = mongoose.model("Application", ApplicationSchema);
-
 /* ================== AUTH ================== */
 
 const auth = (req, res, next) => {
