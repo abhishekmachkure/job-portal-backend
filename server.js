@@ -17,7 +17,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ DB Error:", err));
 
-/* ================== MODELS ================== */
+ 
 
 /* ================== MODELS ================== */
 
@@ -284,6 +284,25 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
+/* ================== UPDATE APPLICATION STATUS ================== */
 
+app.put("/api/applications/:id", auth, adminOnly, async (req, res) => {
+  try {
+    const updated = await Application.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    res.json(updated);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
  
