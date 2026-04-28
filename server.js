@@ -44,15 +44,7 @@ const JobSchema = new mongoose.Schema({
   skills: String
 });
 
-const ApplicationSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
-  status: {
-    type: String,
-    enum: ["applied", "accepted", "rejected"],
-    default: "applied"
-  }
-});
+
 
 const User = mongoose.model("User", UserSchema);
 const Job = mongoose.model("Job", JobSchema);
@@ -290,3 +282,5 @@ const ApplicationSchema = new mongoose.Schema({
     default: "applied"
   }
 }, { timestamps: true }); // ✅ ADD THIS LINE
+
+ 
