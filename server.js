@@ -44,6 +44,15 @@ const JobSchema = new mongoose.Schema({
   skills: String
 });
 
+const ApplicationSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
+  status: {
+    type: String,
+    enum: ["applied", "accepted", "rejected"],
+    default: "applied"
+  }
+}, { timestamps: true }); // ✅ ADD THIS LINE
 
 
 const User = mongoose.model("User", UserSchema);
@@ -273,14 +282,6 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-const ApplicationSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
-  status: {
-    type: String,
-    enum: ["applied", "accepted", "rejected"],
-    default: "applied"
-  }
-}, { timestamps: true }); // ✅ ADD THIS LINE
+
 
  
